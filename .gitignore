@@ -4,6 +4,7 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 logs
+postgres_data
 
 ### STS ###
 .apt_generated
