@@ -51,7 +51,7 @@ monitoring tools. This project demonstrates how to build a robust order manageme
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/hendisantika/spring-boot-event-driven-sample.git
 cd spring-boot-event-driven-sample
 ```
 
