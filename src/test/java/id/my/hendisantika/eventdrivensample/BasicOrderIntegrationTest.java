@@ -10,7 +10,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -21,17 +25,27 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Basic integration test for order service and repository integration.
- * Tests core business logic without external dependencies like Kafka.
+ * Uses PostgreSQL Testcontainer for realistic database testing.
  */
 @SpringBootTest
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:basictest",
-        "spring.datasource.driver-class-name=org.h2.Driver",
-        "spring.jpa.hibernate.ddl-auto=create-drop",
-        "spring.kafka.bootstrap-servers=localhost:9999", // Non-existent server to avoid Kafka dependency
-        "logging.level.id.my.hendisantika.eventdrivensample=INFO"
-})
+@Testcontainers
 class BasicOrderIntegrationTest {
+
+    @Container
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
+            .withDatabaseName("testdb")
+            .withUsername("testuser")
+            .withPassword("testpass");
+
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
+        registry.add("spring.kafka.bootstrap-servers", () -> "localhost:9999");
+        registry.add("logging.level.id.my.hendisantika.eventdrivensample", () -> "INFO");
+    }
 
     @Autowired
     private OrderService orderService;

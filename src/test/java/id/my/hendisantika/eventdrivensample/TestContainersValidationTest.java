@@ -4,27 +4,23 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Created by IntelliJ IDEA.
- * Project : spring-boot-event-driven-sample
- * User: hendisantika
- * Link: s.id/hendisantika
- * Email: hendisantika@yahoo.co.id
- * Telegram : @hendisantika34
- * Date: 10/08/25
- * Time: 06.50
- * To change this template use File | Settings | File Templates.
+ * Simple test to validate Testcontainers PostgreSQL integration without Kafka
  */
-
-@SpringBootTest
+@SpringBootTest(properties = {
+        "spring.kafka.bootstrap-servers=localhost:9999",
+        "spring.kafka.consumer.auto-startup=false",
+        "spring.kafka.producer.retry-backoff-ms=100",
+        "spring.kafka.consumer.retry-backoff-ms=100"
+})
 @Testcontainers
-class SpringBootEventDrivenSampleApplicationTests {
+class TestContainersValidationTest {
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
@@ -32,20 +28,17 @@ class SpringBootEventDrivenSampleApplicationTests {
             .withUsername("testuser")
             .withPassword("testpass");
 
-    @Container
-    static KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.4.0"));
-
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.kafka.bootstrap-servers", kafka::getBootstrapServers);
     }
 
     @Test
-    void contextLoads() {
+    void shouldConnectToPostgresContainer() {
+        assertTrue(postgres.isRunning());
+        assertTrue(postgres.getJdbcUrl().contains("jdbc:postgresql://"));
     }
-
 }
