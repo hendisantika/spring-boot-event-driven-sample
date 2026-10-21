@@ -2,6 +2,7 @@ package id.my.hendisantika.eventdrivensample;
 
 import id.my.hendisantika.eventdrivensample.dto.OrderRequest;
 import id.my.hendisantika.eventdrivensample.dto.OrderResponse;
+import id.my.hendisantika.eventdrivensample.event.OrderEventPublisher;
 import id.my.hendisantika.eventdrivensample.model.Order;
 import id.my.hendisantika.eventdrivensample.model.OrderStatus;
 import id.my.hendisantika.eventdrivensample.repository.OrderRepository;
@@ -12,7 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -32,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class BasicOrderIntegrationTest {
 
     @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
+    static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:15-alpine")
             .withDatabaseName("testdb")
             .withUsername("testuser")
             .withPassword("testpass");
@@ -46,6 +48,10 @@ class BasicOrderIntegrationTest {
         registry.add("spring.kafka.bootstrap-servers", () -> "localhost:9999");
         registry.add("logging.level.id.my.hendisantika.eventdrivensample", () -> "INFO");
     }
+
+    // No Kafka broker in this test, so stub the publisher to avoid blocking on sends
+    @MockitoBean
+    private OrderEventPublisher orderEventPublisher;
 
     @Autowired
     private OrderService orderService;
