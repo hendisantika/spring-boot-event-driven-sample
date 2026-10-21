@@ -1,5 +1,10 @@
 # Spring Boot Event-Driven Sample
 
+[![Java CI with Gradle](https://github.com/hendisantika/spring-boot-event-driven-sample/actions/workflows/gradle.yml/badge.svg)](https://github.com/hendisantika/spring-boot-event-driven-sample/actions/workflows/gradle.yml)
+![Java](https://img.shields.io/badge/Java-25-orange?logo=openjdk)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.1-6DB33F?logo=springboot)
+![Gradle](https://img.shields.io/badge/Gradle-9.3.1-02303A?logo=gradle)
+
 A comprehensive event-driven microservice architecture sample using Spring Boot, Apache Kafka, PostgreSQL, and
 monitoring tools. This project demonstrates how to build a robust order management system with event sourcing patterns.
 
@@ -12,7 +17,8 @@ monitoring tools. This project demonstrates how to build a robust order manageme
 - **Monitoring**: Kafka UI for event tracking
 - **Database Management**: pgAdmin for database administration
 - **Docker Support**: Complete containerized environment
-- **Testing**: Automated API testing scripts
+- **Testing**: Testcontainers-based integration tests (PostgreSQL & Kafka) plus API testing scripts
+- **CI/CD**: GitHub Actions build on JDK 25 with Dependabot keeping dependencies fresh
 
 ## 🏗️ Architecture Overview
 
@@ -31,18 +37,20 @@ monitoring tools. This project demonstrates how to build a robust order manageme
 
 ## 🛠️ Tech Stack
 
-- **Backend**: Spring Boot 3.5.4, Java 21
-- **Database**: PostgreSQL 15
-- **Message Broker**: Apache Kafka 7.5.0
-- **Build Tool**: Gradle
+- **Backend**: Spring Boot 4.1.1, Java 25
+- **JSON**: Jackson 3 (`tools.jackson`)
+- **Database**: PostgreSQL 17
+- **Message Broker**: Apache Kafka (Confluent Platform 7.5.0)
+- **Build Tool**: Gradle 9.3.1 (wrapper) with Java toolchains
 - **Containerization**: Docker & Docker Compose
 - **Monitoring**: Kafka UI, pgAdmin
-- **Testing**: JUnit 5, Spring Boot Test
+- **Testing**: JUnit 6, Spring Boot Test, Testcontainers 2
+- **CI**: GitHub Actions + Dependabot
 
 ## 📋 Prerequisites
 
-- Java 21 or higher
-- Docker and Docker Compose
+- Java 25 (Gradle toolchains will use a locally installed JDK 25)
+- Docker and Docker Compose (also required to run the Testcontainers-based tests)
 - Git
 - curl or Postman (for API testing)
 
@@ -201,12 +209,19 @@ CREATE TABLE orders (
 ### Automated Testing
 
 ```bash
-# Run all tests
+# Run all tests (requires a running Docker daemon for Testcontainers)
 ./gradlew test
 
-# Run with coverage
-./gradlew test jacocoTestReport
+# Full build (compile + tests + bootJar)
+./gradlew build
 ```
+
+| Test class                                    | What it covers                                                        |
+|-----------------------------------------------|-----------------------------------------------------------------------|
+| `SpringBootEventDrivenSampleApplicationTests` | Application context loads against PostgreSQL & Kafka containers       |
+| `TestContainersValidationTest`                | PostgreSQL Testcontainer wiring                                       |
+| `BasicOrderIntegrationTest`                   | Order service & persistence (Kafka publisher mocked)                  |
+| `OrderIntegrationTest`                        | Full REST → service → DB → Kafka flow using `TestRestTemplate`        |
 
 ### Manual API Testing
 
@@ -345,6 +360,27 @@ DB_PASS=orderpass
 # Kafka
 KAFKA_BOOTSTRAP_SERVERS=localhost:9092
 ```
+
+## 🔄 Continuous Integration & Dependency Updates
+
+### GitHub Actions
+
+The [`Java CI with Gradle`](.github/workflows/gradle.yml) workflow runs on every push and pull request to `main`:
+
+- **build** – sets up Temurin JDK 25, then runs `./gradlew build` (including Testcontainers integration tests)
+- **dependency-submission** – submits the Gradle dependency graph so Dependabot alerts cover all transitive dependencies
+
+### Dependabot
+
+[`.github/dependabot.yml`](.github/dependabot.yml) keeps the project up to date:
+
+| Ecosystem      | Schedule                         | Grouping                                                                 | Commit prefix   |
+|----------------|----------------------------------|--------------------------------------------------------------------------|-----------------|
+| Gradle         | Daily, 05:00 Asia/Jakarta        | `spring-boot`, `testcontainers`, other minor/patch updates                | `build(deps)`   |
+| GitHub Actions | Daily, 05:00 Asia/Jakarta        | All actions in a single PR                                               | `ci(deps)`      |
+| Docker Compose | Weekly (Mon), 05:00 Asia/Jakarta | Images in `compose.yaml` (Confluent major upgrades ignored)              | `build(docker)` |
+
+Pull requests are labelled (`dependencies` + ecosystem) and assigned to the maintainer.
 
 ## 🤝 Contributing
 
