@@ -1,5 +1,6 @@
 version: 2
 updates:
+  # Gradle dependencies (Spring Boot, Testcontainers, Lombok, ...)
   - package-ecosystem: gradle
     directory: "/"
     schedule:
@@ -7,10 +8,76 @@ updates:
       time: '05:00'
       timezone: Asia/Jakarta
     open-pull-requests-limit: 10
-  - package-ecosystem: "github-actions"
+    target-branch: main
+    assignees:
+      - hendisantika
+    labels:
+      - dependencies
+      - java
+    commit-message:
+      prefix: "build(deps)"
+      prefix-development: "build(deps-dev)"
+      include: scope
+    rebase-strategy: auto
+    groups:
+      spring-boot:
+        patterns:
+          - "org.springframework.boot*"
+          - "io.spring.dependency-management*"
+      testcontainers:
+        patterns:
+          - "org.testcontainers*"
+      gradle-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+        exclude-patterns:
+          - "org.springframework.boot*"
+          - "io.spring.dependency-management*"
+          - "org.testcontainers*"
+
+  # GitHub Actions used in .github/workflows
+  - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: daily
       time: '05:00'
       timezone: Asia/Jakarta
     open-pull-requests-limit: 10
+    target-branch: main
+    assignees:
+      - hendisantika
+    labels:
+      - dependencies
+      - github_actions
+    commit-message:
+      prefix: "ci(deps)"
+      include: scope
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # Container images referenced in compose.yaml
+  - package-ecosystem: docker-compose
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: '05:00'
+      timezone: Asia/Jakarta
+    open-pull-requests-limit: 5
+    target-branch: main
+    assignees:
+      - hendisantika
+    labels:
+      - dependencies
+      - docker
+    commit-message:
+      prefix: "build(docker)"
+      include: scope
+    ignore:
+      # Keep Kafka & Zookeeper images on the same Confluent major line
+      - dependency-name: "confluentinc/*"
+        update-types:
+          - version-update:semver-major
